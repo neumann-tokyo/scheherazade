@@ -1,0 +1,48 @@
+{
+  "title": "すごいAI特集",
+  "description": "Techラジオ#3 すごいAIを紹介します",
+  "promotion": false,
+  "timeline": [
+    {
+      "id": "fbf0c908-db53-47b9-a5f1-5cbffcd1ce1d",
+      "videos": [
+        {
+          "path": "fbf0c908-db53-47b9-a5f1-5cbffcd1ce1d.mp4",
+          "effects": [
+            {
+              "name": "chroma key",
+              "props": {
+                "target_color": "#00ff00",
+                "threshold": "120"
+              }
+            }
+          ]
+        }
+      ],
+      "audios": [
+        "bgm.mp3"
+      ],
+      "texts": [
+        {
+          "text": [
+            "こんにちは",
+            "元気ですか？"
+          ],
+          "position": {
+            "x": 120,
+            "y": 100,
+            "w": 300,
+            "h": 300
+          },
+          "font_size": "15pt",
+          "font_family": "sane-serif",
+          "font_color": "ffffff",
+          "border_color": "ffff00",
+          "chank": "char",
+          "speed": 500
+        }
+      ],
+      "children": []
+    }
+  ]
+}

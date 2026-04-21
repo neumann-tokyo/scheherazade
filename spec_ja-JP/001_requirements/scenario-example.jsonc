@@ -3,6 +3,8 @@
   "description": "Techラジオ#3 すごいAIを紹介します",
   "screen": "1920x1080",
   "fps": 30,
+  "video_codec": "vp9",
+  "audio_codec": "aac",
   "timeline": [
     {
       "id": "000001",

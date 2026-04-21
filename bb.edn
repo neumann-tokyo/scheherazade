@@ -1,0 +1,12 @@
+{:paths ["src"]
+ :deps {cheshire/cheshire {:mvn/version "5.13.0"}
+        metosin/malli {:mvn/version "0.16.4"}
+        babashka/process {:mvn/version "0.5.22"}
+        org.babashka/cli {:mvn/version "0.8.62"}}
+ :tasks
+ {test {:doc "Run clojure.test suites (src + test on classpath)"
+        :task (babashka.tasks/shell "bb" "test_runner.clj")}
+  sche {:doc "sche scenario.jsonc [-o out.mp4] | sche --generate scenario.jsonc"
+        :task (apply babashka.tasks/shell
+                     (into ["bb" "-m" "scheherazade.main"]
+                           *command-line-args*))}}}

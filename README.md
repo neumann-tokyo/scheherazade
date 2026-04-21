@@ -1,4 +1,6 @@
-# Scheherazade
+# Scheherazade (Šahrzād)
+
+[Sheherazade](https://en.wikipedia.org/wiki/Scheherazade)
 
 To install dependencies:
 

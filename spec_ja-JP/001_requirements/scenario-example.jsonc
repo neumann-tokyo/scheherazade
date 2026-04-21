@@ -1,13 +1,14 @@
 {
   "title": "すごいAI特集",
   "description": "Techラジオ#3 すごいAIを紹介します",
-  "promotion": false,
+  "screen": "1920x1080",
+  "fps": 30,
   "timeline": [
     {
-      "id": "fbf0c908-db53-47b9-a5f1-5cbffcd1ce1d",
+      "id": "000001",
       "videos": [
         {
-          "path": "fbf0c908-db53-47b9-a5f1-5cbffcd1ce1d.mp4",
+          "path": "000001.mp4",
           "effects": [
             {
               "name": "chroma key",

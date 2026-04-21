@@ -5,31 +5,37 @@
 ## Top level 要素
 
 - title
-  - Type: string (最大文字数:)
+  - Type: string (最大文字数: 100)
   - 必須
   - YouTube のタイトル
 - description
-  - Type: string (最大文字数:)
+  - Type: string (最大文字数: 2000)
   - 必須
   - YouTube の説明文
-- promotion
-  - Type: boolean
-  - 任意 (デフォルト: false)
-  - 宣伝を含むかどうかの設定値
-- license
-  - Type: string (enum)
-  - 任意: (デフォルト: )
-  - ライセンス表記
-- 他にも色々必要(youtube参照)
+- screen
+  - Type: string
+  - 任意 (default: "1920x1080")
+  - 出力する動画のスクリーンサイズ。`横幅x縦幅` のフォーマット
+- fps
+  - Type: string
+  - 任意 (default: 30)
+  - 出力する動画の fps
+- video_codec
+  - Type: string
+  - 任意 (default: vp9)
+- audio_codec
+  - Type: string
+  - 任意 (default: aac)
 - timeline
-  - Type: Timeline Object
+  - Type: 配列[Timeline Object]
   - 必須
 
 ## Timeline Object
 
 - id
-  - Type: uuid
+  - Type: string
   - 必須
+  - Timeline Object が一意になるID。scenario.jsonc の上から順番に 6 桁の連番とする。
 - videos
   - Type: 配列[動画/画像ファイルのパス、または Video Object]
   - 任意
@@ -49,6 +55,15 @@
   - Type: string
   - 必須
   - 画像または動画ファイルのパス
+  - 画像または動画の大きさが `screen` で指定したサイズではない場合、中央揃えで `screen` の大きさに拡大縮小する
+- length
+  - Type: integer
+  - 任意
+  - 何ミリ秒この映像を表示するかの設定
+  - 入力がない場合、動画であれば動画の最後まで再生がデフォルト
+    - ただし audios 配列または children 配列の全ての再生が終わるタイミングのほうが早ければ、そこで動画の再生をとめる
+  - 入力がない場合、画像であれば無限ループする
+    - ただし audios 配列または children 配列の全ての再生が終わるタイミングのほうが早ければ、そこで動画の再生をとめる
 - effects
   - Type: 配列[Effect Object]
   - 任意
@@ -68,6 +83,9 @@
 
 ## Effect Object
 
+音声の effect では音量を調整する Effect を使えるようにしたい。
+映像の effect ではクロマキー合成に対応して、親Timelineの映像に子Timelineの映像を重ねることができるようにしたい。
+
 - name
   - Type: string (enum)
   - 必須
@@ -79,8 +97,11 @@
 
 ## Generation Object
 
+Audio Object の `path` で指定されたファイルが存在しないときに、音声生成を行う。将来的には音楽生成にも対応したいが、今のところは TTS (Text to Speech) のみを考える。
+下記の `name` で指定したロジック（これは内部的には Template method pattern か strategy pattern などで実装する）名の処理を行って、 path の位置に生成した音声を出力する
+
 - name
-  - Type: string (enum)
+  - Type: string (enum: voicevox, gemini, elevenlabs)
   - 必須
   - 生成を行うロジックの名前
 - props
@@ -101,6 +122,12 @@
   }
 }
 ```
+
+具体的なロジックのサンプルコード:
+
+- @/home/kbaba/repos/gitea/Podcasts/eleven_labs_cli.py 
+- @/home/kbaba/repos/gitea/Podcasts/voicevox_cli.py
+- @/home/kbaba/repos/gitea/Podcasts/gemini_cli.py
 
 ## Text Object
 
@@ -139,6 +166,11 @@
   - Type: number
   - 任意: (デフォルト: 500)
   - 文字を表示する速度。単位は ms
+
+### その他の仕様
+
+- 全ての文字を表示し終えたら videos の終了まで文字を表示し続けること
+- videos, audios の終了までに texts を表示し終えない場合は、残り部分は表示せず次の Timeline Object に進む
 
 ### Position Object
 

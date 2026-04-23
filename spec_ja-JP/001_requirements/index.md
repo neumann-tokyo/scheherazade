@@ -60,7 +60,7 @@ scenario.jsonc 中の `generation` がある項目だけに作用して、音声
 
 - title
   - YouTube用のタイトル。投稿する際に人間がコピペする
-- eescription
+- description
   - YouTube用の説明文。投稿する際に人間がコピペする
 - screen
   - 作成する動画のサイズ

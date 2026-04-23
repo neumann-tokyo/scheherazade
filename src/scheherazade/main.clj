@@ -22,12 +22,6 @@
      :scenario scenario
      :dictionary (:dictionary parsed)}))
 
-(defn- normalize-scenario-keys
-  [raw]
-  (-> raw
-      (dissoc :eescription)
-      (assoc :description (or (:description raw) (:eescription raw) ""))))
-
 (defn- default-dictionary-path
   [scenario-path]
   (str (fs/file (or (some-> scenario-path fs/parent str) ".") "dictionary.json")))
@@ -39,7 +33,7 @@
 (defn- render-file!
   [scenario-path out-path dictionary-path]
   (let [raw (jsonc/parse-file scenario-path)
-        data (normalize-scenario-keys raw)
+        data raw
         err (schema/validate data)
         _ (when err (throw (ex-info "Invalid scenario" err)))
         _ (gen/ensure-audio-paths! data {:dictionary-path dictionary-path})
@@ -68,7 +62,7 @@
       (case mode
         :generate
         (let [raw (jsonc/parse-file scenario)
-              data (normalize-scenario-keys raw)
+              data raw
               err (schema/validate data)]
           (when err (throw (ex-info "Invalid scenario" err)))
           (gen/ensure-audio-paths! data {:dictionary-path dictionary-path})

@@ -7,6 +7,7 @@
             [scheherazade.timeline.resolve :as resolve]
             [clojure.string :as str]))
 
+;; TODO https://github.com/babashka/cli を使ってリファクタリングすること
 (defn- parse-cli
   [args]
   (let [mode (if (some #{"--generate"} args) :generate :render)

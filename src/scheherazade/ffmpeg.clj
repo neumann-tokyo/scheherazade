@@ -3,6 +3,9 @@
             [babashka.process :as p]
             [clojure.string :as str]))
 
+;; TODO 文字列結合で ffmpeg コマンドを作成するのは読みづらいため https://github.com/yogthos/Selmer を使って整理する
+;; Selmer は babashka に built-in されていて selmer.parser が使える
+
 (defn parse-screen
   [s]
   (let [s (or s "1920x1080")
@@ -94,16 +97,16 @@
     (cond
       (zero? n) {:chains ["[0:v]format=yuv420p[vid]"] :vtag "[vid]"}
       (= n 1) {:chains [(clip-filter 0 w h fps (/ (:duration-ms (first v-clips)) 1000.0)
-                         (:kind (first v-clips)) (:effects (first v-clips)))]
+                                     (:kind (first v-clips)) (:effects (first v-clips)))]
                :vtag "[p0]"}
       :else {:chains (conj (vec (map-indexed
-                                  (fn [i c]
-                                    (clip-filter i w h fps (/ (:duration-ms c) 1000.0)
-                                                 (:kind c) (:effects c)))
-                                  v-clips))
+                                 (fn [i c]
+                                   (clip-filter i w h fps (/ (:duration-ms c) 1000.0)
+                                                (:kind c) (:effects c)))
+                                 v-clips))
                            (str (apply str (map #(str "[p" % "]") (range n)))
                                 "concat=n=" n ":v=1:a=0[vid]"))
-            :vtag "[vid]"})))
+             :vtag "[vid]"})))
 
 (defn- audio-graph
   [na a0 dur-sec a-clips]

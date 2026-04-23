@@ -4,6 +4,8 @@
             [clojure.string :as str]
             [selmer.parser :as selmer]))
 
+;; TODO chank アニメーションの実装 (これもどうやれば良いのやら simple-ffmpeg のコードを参考にする)
+
 (defn parse-screen
   [s]
   (let [s (or s "1920x1080")
@@ -131,6 +133,7 @@
 (defn render-resolved-timeline!
   [{:keys [duration-ms video-clips audio texts children-resolved]} scenario out-path _opts]
   (when (seq children-resolved)
+    ;; TODO children overlay を実装する -> 仕様をもっと固めること
     (throw (ex-info "children overlay not implemented in this build" {:children (count children-resolved)})))
   (let [[w h] (parse-screen (:screen scenario))
         fps (parse-fps scenario)

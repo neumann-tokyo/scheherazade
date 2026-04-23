@@ -1,10 +1,8 @@
 (ns scheherazade.ffmpeg
   (:require [babashka.fs :as fs]
             [babashka.process :as p]
-            [clojure.string :as str]))
-
-;; TODO 文字列結合で ffmpeg コマンドを作成するのは読みづらいため https://github.com/yogthos/Selmer を使って整理する
-;; Selmer は babashka に built-in されていて selmer.parser が使える
+            [clojure.string :as str]
+            [selmer.parser :as selmer]))
 
 (defn parse-screen
   [s]
@@ -70,18 +68,26 @@
           fs (str/replace (or (:font_size t0) "24") #"pt$" "")
           fc (or (:font_color t0) "ffffff")
           bc (or (:border_color t0) "000000")]
-      (str ",drawtext=text='" (escape-drawtext s)
-           "':fontsize=" fs ":fontcolor=0x" fc ":borderw=2:bordercolor=0x" bc
-           ":x=" x ":y=" y ":enable='between(t,0," duration-sec ")'"))))
+      (selmer/render
+       ",drawtext=text='{{text}}':fontsize={{font_size}}:fontcolor=0x{{font_color}}:borderw=2:bordercolor=0x{{border_color}}:x={{x}}:y={{y}}:enable='between(t,0,{{duration}})'"
+       {:text (escape-drawtext s)
+        :font_size fs
+        :font_color fc
+        :border_color bc
+        :x x
+        :y y
+        :duration duration-sec}))))
 
 (defn- clip-filter
   [idx w h fps dur-sec _kind effects]
-  (str "[" idx ":v]fps=fps=" fps
-       ",scale=w=" w ":h=" h ":force_original_aspect_ratio=decrease"
-       ",pad=" w ":" h ":(ow-iw)/2:(oh-ih)/2"
-       ",trim=duration=" dur-sec ",setpts=PTS-STARTPTS"
-       (or (chroma-suffix effects) "")
-       "[p" idx "]"))
+  (selmer/render
+   "[{{idx}}:v]fps=fps={{fps}},scale=w={{w}}:h={{h}}:force_original_aspect_ratio=decrease,pad={{w}}:{{h}}:(ow-iw)/2:(oh-ih)/2,trim=duration={{duration}},setpts=PTS-STARTPTS{{chroma}}[p{{idx}}]"
+   {:idx idx
+    :fps fps
+    :w w
+    :h h
+    :duration dur-sec
+    :chroma (or (chroma-suffix effects) "")}))
 
 (defn- video-input-args
   [clip fps]
@@ -152,7 +158,9 @@
               (audio-graph na a0 dur-sec a-clips)
               [(str "[" anull-idx ":a]asetpts=PTS-STARTPTS[aud]")])
         vsrc (subs vtag 1 (dec (count vtag)))
-        vout (str "[" vsrc "]format=yuv420p" (or (drawtext-suffix texts dur-sec) "") "[vout]")
+        vout (selmer/render "[{{vsrc}}]format=yuv420p{{drawtext}}[vout]"
+                            {:vsrc vsrc
+                             :drawtext (or (drawtext-suffix texts dur-sec) "")})
         fc (str/join ";" (concat chains ach [vout]))
         cmd (vec (concat ["ffmpeg" "-y"] in-args
                          ["-filter_complex" fc "-map" "[vout]" "-map" "[aud]"

@@ -25,11 +25,17 @@ bb run sche -- path/to/scenario.jsonc -o youtube.mp4
 bb run sche -- --generate path/to/scenario.jsonc
 ```
 
-各 `generation.name`（`voicevox` / `gemini` / `elevenlabs`）用に、**外部コマンド**を環境変数で渡します（仕様で参照される `eleven_labs_cli.py` 等と同様に、`path` に書き出すコマンドを想定）。
+辞書ファイル（読みの置換。省略時はシナリオと同じディレクトリの `dictionary.json`）を明示する場合:
 
-- `SCHE_GENERATE_VOICEVOX` / `SCHE_GENERATE_GEMINI` / `SCHE_GENERATE_ELEVENLABS`  
-  または `SCHE_VOICEVOX_CMD` / `SCHE_GEMINI_CMD` / `SCHE_ELEVENLABS_CMD`  
-  値はスペース区切りの argv 先頭（例: `python3 /path/to/cli.py`）。実行時に出力ファイルパスが末尾引数として付与されます。
+```bash
+bb run sche -- path/to/scenario.jsonc -o youtube.mp4 -d path/to/dictionary.json
+```
+
+`generation.name` ごとの環境変数:
+
+- `voicevox`: `SCHE_VOICEVOX_URL`（例: `http://127.0.0.1:50021`）
+- `elevenlabs`: `SCHE_ELEVENLABS_URL`, `SCHE_ELEVENLABS_API_KEY`
+- `gemini`: `GEMINI_API_KEY` または `GOOGLE_API_KEY`
 
 ## テスト
 
@@ -42,8 +48,10 @@ bb test
 ## 実装状況（概要）
 
 - JSONC（`//` / `/* */`、文字列外）→ Cheshire パース
-- Malli によるシナリオ検証（`eescription` は入力時に `description` へ正規化）
+- Malli によるシナリオ検証
 - タイムラインの論理尺の resolve（`:path->duration-ms` または `:ffprobe-fn` で差し替え可能）
+- `--generate` / レンダリング前処理で、`generation` がある Audio Object の音声ファイルを API 経由で自動生成
+- `dictionary.json` による読み置換（`generation.props.text` に適用）
 - 単一 Timeline: 画像/動画の scale+pad、任意 chroma 系 `Effect`、`drawtext`（先頭の Text の全表示）、VP9 または H.264 + AAC
 - ルート `timeline` が複数ある場合はセグメントごとにエンコードし、`concat` で連結
 - `children` の親子 overlay / `amix` / テキストの chank アニメは未実装（該当シナリオはエラーになります）

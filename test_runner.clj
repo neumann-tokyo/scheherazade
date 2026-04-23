@@ -7,12 +7,16 @@
 
 (require 'scheherazade.scenario.jsonc-test
          'scheherazade.scenario.schema-test
-         'scheherazade.timeline.resolve-test)
+         'scheherazade.timeline.resolve-test
+         'scheherazade.generation-test
+         'scheherazade.main-test)
 
 (def results
   (t/run-tests 'scheherazade.scenario.jsonc-test
                'scheherazade.scenario.schema-test
-               'scheherazade.timeline.resolve-test))
+               'scheherazade.timeline.resolve-test
+               'scheherazade.generation-test
+               'scheherazade.main-test))
 
 (let [{:keys [fail error]} results]
   (when (pos? (+ fail error))

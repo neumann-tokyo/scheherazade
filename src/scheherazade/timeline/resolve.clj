@@ -83,7 +83,7 @@
 (defn- children-end-ms
   [children ctx]
   (if (seq children)
-    (apply max (map #(timeline-node-ms % ctx) children))
+    (reduce + 0 (map #(timeline-node-ms % ctx) children))
     0))
 
 (defn timeline-node-ms
@@ -95,37 +95,51 @@
 
 (defn- build-video-clips
   [{:keys [videos]} duration-ms ctx]
-  (let [vids (or videos [])]
-    (loop [vs vids remaining duration-ms t 0 clips []]
-      (if (or (empty? vs) (<= remaining 0))
-        clips
-        (let [v (first vs)
-              p (video-path v)
-              img? (image-path? p)
-              natural (clip-natural-ms v ctx)
-              clip-ms (long
-                       (cond
-                         (= natural :infinite) remaining
-                         img? remaining
-                         :else (min natural remaining)))]
-          (recur (rest vs) (- remaining clip-ms) (+ t clip-ms)
-                 (conj clips {:path p
-                              :kind (if img? :image :video)
-                              :duration-ms clip-ms
-                              :effects (or (video-effects v) [])})))))))
+  (let [vids (vec (or videos []))]
+    (if (empty? vids)
+      []
+      (loop [vs vids remaining duration-ms clips []]
+        (if (<= remaining 0)
+          clips
+          (let [vs (if (empty? vs) vids vs)
+                v (first vs)
+                p (video-path v)
+                img? (image-path? p)
+                natural (clip-natural-ms v ctx)
+                clip-ms (long
+                         (cond
+                           (= natural :infinite) remaining
+                           img? remaining
+                           :else (min natural remaining)))]
+            (recur (rest vs) (- remaining clip-ms)
+                   (conj clips {:path p
+                                :kind (if img? :image :video)
+                                :duration-ms clip-ms
+                                :effects (or (video-effects v) [])}))))))))
 
 (defn- build-audio-clips
   [{:keys [audios]} duration-ms ctx]
-  (let [aus (or audios [])
-        clips (vec
-               (reduce (fn [acc a]
-                         (let [n (normalize-audio a)
-                               d (media-duration-ms (:path n) ctx)]
-                           (conj acc (assoc n :duration-ms d))))
-                       []
-                       aus))
-        total (reduce + 0 (map :duration-ms clips))]
-    {:clips clips :total-ms total :trim-to-ms (min duration-ms total)}))
+  (let [aus (vec (or audios []))
+        one-pass (vec
+                  (reduce (fn [acc a]
+                            (let [n (normalize-audio a)
+                                  d (media-duration-ms (:path n) ctx)]
+                              (conj acc (assoc n :duration-ms d))))
+                          []
+                          aus))
+        one-pass-total (reduce + 0 (map :duration-ms one-pass))]
+    (if (or (empty? one-pass) (<= duration-ms one-pass-total))
+      {:clips one-pass :total-ms one-pass-total :trim-to-ms (min duration-ms one-pass-total)}
+      (loop [remaining duration-ms clips [] src one-pass]
+        (if (<= remaining 0)
+          (let [all-clips (vec clips)
+                total (reduce + 0 (map :duration-ms all-clips))]
+            {:clips all-clips :total-ms total :trim-to-ms (min duration-ms total)})
+          (let [src (if (empty? src) one-pass src)
+                ac (first src)
+                clip-ms (min (:duration-ms ac) remaining)
+                clip (assoc ac :duration-ms clip-ms)]
+            (recur (- remaining clip-ms) (conj clips clip) (rest src))))))))
 
 (defn resolve-timeline-object
   "Returns {:duration-ms ... :video-clips ... :audio ... :texts ... :children-resolved ...}"

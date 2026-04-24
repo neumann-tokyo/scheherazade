@@ -84,7 +84,7 @@ scenario.jsonc 中の `generation` がある項目だけに作用して、音声
   - videos の長さは最長で audios の長さとする
 - videos と audios と children がある場合
   - 親の videos と audios の最長は、children の Timeline が終了する長さとする
-  - 逆にいれば、完成動画では children の videos や audios を再生中、常に親 Timeline Object の videos と audios も再生する
+  - 逆にいえば、完成動画では children の videos や audios を再生中、常に親 Timeline Object の videos と audios も再生する
   - 映像の表示順としては親 Timeline Object の videos の上に子 Timeline Object の映像を重ねる順番とする
     - 映像内の alpha チャンネルを反映すること
   - audios に関しては、使い方の想定としては、親 Timeline で bgm を再生して、子 Timeline で TTS 音声を再生するような想定

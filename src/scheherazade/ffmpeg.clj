@@ -81,15 +81,21 @@
         :duration duration-sec}))))
 
 (defn- clip-filter
-  [idx w h fps dur-sec _kind effects]
-  (selmer/render
-   "[{{idx}}:v]fps=fps={{fps}},scale=w={{w}}:h={{h}}:force_original_aspect_ratio=decrease,pad={{w}}:{{h}}:(ow-iw)/2:(oh-ih)/2,trim=duration={{duration}},setpts=PTS-STARTPTS{{chroma}}[p{{idx}}]"
-   {:idx idx
-    :fps fps
-    :w w
-    :h h
-    :duration dur-sec
-    :chroma (or (chroma-suffix effects) "")}))
+  [idx w h fps dur-sec _kind effects & {:keys [alpha? tag-prefix]
+                                        :or {alpha? false tag-prefix "p"}}]
+  (let [pad-color (if alpha? ":color=0x00000000" "")
+        fmt (if alpha? "format=yuva420p," "")]
+    (selmer/render
+     "[{{idx}}:v]{{fmt}}fps=fps={{fps}},scale=w={{w}}:h={{h}}:force_original_aspect_ratio=decrease,pad={{w}}:{{h}}:(ow-iw)/2:(oh-ih)/2{{pad_color}},trim=duration={{duration}},setpts=PTS-STARTPTS{{chroma}}[{{prefix}}{{idx}}]"
+     {:idx idx
+      :fmt fmt
+      :fps fps
+      :w w
+      :h h
+      :pad_color pad-color
+      :duration dur-sec
+      :chroma (or (chroma-suffix effects) "")
+      :prefix tag-prefix})))
 
 (defn- video-input-args
   [clip fps]
@@ -130,11 +136,11 @@
             (str (apply str (map #(str "[ac" % "]") (range na)))
                  "concat=n=" na ":v=0:a=1[aud]")))))
 
-(defn render-resolved-timeline!
-  [{:keys [duration-ms video-clips audio texts children-resolved]} scenario out-path _opts]
-  (when (seq children-resolved)
-    ;; TODO children overlay を実装する -> 仕様をもっと固めること
-    (throw (ex-info "children overlay not implemented in this build" {:children (count children-resolved)})))
+(declare concat-segment-files!)
+
+(defn- render-leaf-timeline!
+  "Render a single timeline object (no children) to a file."
+  [{:keys [duration-ms video-clips audio texts]} scenario out-path {:keys [alpha?] :or {alpha? false}}]
   (let [[w h] (parse-screen (:screen scenario))
         fps (parse-fps scenario)
         dur-sec (/ duration-ms 1000.0)
@@ -161,17 +167,70 @@
               (audio-graph na a0 dur-sec a-clips)
               [(str "[" anull-idx ":a]asetpts=PTS-STARTPTS[aud]")])
         vsrc (subs vtag 1 (dec (count vtag)))
-        vout (selmer/render "[{{vsrc}}]format=yuv420p{{drawtext}}[vout]"
+        pix-fmt (if alpha? "yuva420p" "yuv420p")
+        vout (selmer/render "[{{vsrc}}]format={{pix_fmt}}{{drawtext}}[vout]"
                             {:vsrc vsrc
+                             :pix_fmt pix-fmt
                              :drawtext (or (drawtext-suffix texts dur-sec) "")})
         fc (str/join ";" (concat chains ach [vout]))
+        enc (if alpha?
+              ["-c:v" "libvpx-vp9" "-b:v" "0" "-crf" "32" "-pix_fmt" "yuva420p"]
+              (video-encoder-args (:video_codec scenario)))
         cmd (vec (concat ["ffmpeg" "-y"] in-args
                          ["-filter_complex" fc "-map" "[vout]" "-map" "[aud]"
                           "-t" (str dur-sec)]
-                         (video-encoder-args (:video_codec scenario))
+                         enc
                          (audio-encoder-args (:audio_codec scenario))
                          [out-path]))]
     (p/check (apply p/process {:inherit true} cmd))))
+
+(defn render-resolved-timeline!
+  [{:keys [duration-ms video-clips audio texts children-resolved] :as resolved} scenario out-path opts]
+  (if (empty? children-resolved)
+    (render-leaf-timeline! resolved scenario out-path (or opts {}))
+    (let [work-dir (str (fs/create-dirs (fs/file (or (:work-dir opts)
+                                                     (System/getProperty "java.io.tmpdir"))
+                                                 "scheherazade-children")))
+          ;; 1. Render parent (no children) as leaf
+          parent-path (str (fs/file work-dir "parent.webm"))
+          parent-leaf {:duration-ms duration-ms
+                       :video-clips video-clips
+                       :audio audio
+                       :texts texts
+                       :children-resolved []}
+          _ (render-leaf-timeline! parent-leaf scenario parent-path {:alpha? false})
+          ;; 2. Render each child to temp file with alpha
+          child-paths (vec (map-indexed
+                            (fn [i child]
+                              (let [cp (str (fs/file work-dir (str "child-" i ".webm")))]
+                                (render-resolved-timeline! child scenario cp
+                                                           (assoc (or opts {}) :alpha? true :work-dir work-dir))
+                                cp))
+                            children-resolved))
+          ;; 3. Concat children into one track
+          children-combined-path (if (= 1 (count child-paths))
+                                   (first child-paths)
+                                   (let [cp (str (fs/file work-dir "children-combined.webm"))]
+                                     (concat-segment-files! child-paths cp work-dir)
+                                     cp))
+          ;; 4. Overlay children on parent + mix audio
+          [w h] (parse-screen (:screen scenario))
+          fps (parse-fps scenario)
+          dur-sec (/ duration-ms 1000.0)
+          cmd (vec (concat
+                    ["ffmpeg" "-y"
+                     "-i" parent-path
+                     "-i" children-combined-path
+                     "-filter_complex"
+                     (str "[1:v]format=yuva420p[child_v];"
+                          "[0:v][child_v]overlay=0:0:format=auto[vout];"
+                          "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0[aout]")
+                     "-map" "[vout]" "-map" "[aout]"
+                     "-t" (str dur-sec)]
+                    (video-encoder-args (:video_codec scenario))
+                    (audio-encoder-args (:audio_codec scenario))
+                    [out-path]))]
+      (p/check (apply p/process {:inherit true} cmd)))))
 
 (defn concat-segment-files!
   [segment-paths out-path work-dir]

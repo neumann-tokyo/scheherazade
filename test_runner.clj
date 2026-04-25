@@ -9,14 +9,16 @@
          'scheherazade.scenario.schema-test
          'scheherazade.timeline.resolve-test
          'scheherazade.generation-test
-         'scheherazade.main-test)
+         'scheherazade.main-test
+         'scheherazade.ffmpeg-test)
 
 (def results
   (t/run-tests 'scheherazade.scenario.jsonc-test
                'scheherazade.scenario.schema-test
                'scheherazade.timeline.resolve-test
                'scheherazade.generation-test
-               'scheherazade.main-test))
+               'scheherazade.main-test
+               'scheherazade.ffmpeg-test))
 
 (let [{:keys [fail error]} results]
   (when (pos? (+ fail error))

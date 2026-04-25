@@ -4,7 +4,6 @@
             [clojure.string :as str]
             [selmer.parser :as selmer]))
 
-;; TODO chank アニメーションの実装 (これもどうやれば良いのやら simple-ffmpeg のコードを参考にする)
 
 (defn parse-screen
   [s]
@@ -59,26 +58,74 @@
       (str/replace ":" "\\:")
       (str/replace "%" "\\%")))
 
+(defn- text-content
+  "Normalize a text value (string or vector of strings) to a single string."
+  [raw]
+  (if (string? raw) raw (str/join "" raw)))
+
+(defn text-windows
+  "Return a seq of {:text :start-sec :end-sec} display windows for a text object.
+
+  chank values:
+    \"text\"   — one window covering the full duration (default)
+    \"char\"   — one window per cumulative character prefix, spaced by speed ms
+    \"string\" — one window per array element, spaced by speed ms
+
+  speed is in milliseconds (default 100)."
+  [text-obj duration-sec]
+  (let [raw (:text text-obj)
+        chank (or (:chank text-obj) "text")
+        speed-ms (double (or (:speed text-obj) 100))
+        speed-sec (/ speed-ms 1000.0)]
+    (case chank
+      "text"
+      [{:text (text-content raw) :start-sec 0 :end-sec duration-sec}]
+
+      "char"
+      (let [full (text-content raw)
+            n (count full)]
+        (if (zero? n)
+          []
+          (map-indexed
+           (fn [i _]
+             {:text (subs full 0 (inc i))
+              :start-sec (* i speed-sec)
+              :end-sec (if (= i (dec n)) duration-sec (* (inc i) speed-sec))})
+           full)))
+
+      "string"
+      (let [arr (if (vector? raw) raw [raw])
+            n (count arr)]
+        (map-indexed
+         (fn [i s]
+           {:text s
+            :start-sec (* i speed-sec)
+            :end-sec (if (= i (dec n)) duration-sec (* (inc i) speed-sec))})
+         arr)))))
+
 (defn- drawtext-suffix
   [texts duration-sec]
   (when-let [t0 (first texts)]
-    (let [raw (:text t0)
-          s (if (string? raw) raw (str/join "" raw))
-          pos (:position t0)
+    (let [pos (:position t0)
           x (long (:x pos))
           y (long (:y pos))
           fs (str/replace (or (:font_size t0) "24") #"pt$" "")
           fc (or (:font_color t0) "ffffff")
-          bc (or (:border_color t0) "000000")]
-      (selmer/render
-       ",drawtext=text='{{text}}':fontsize={{font_size}}:fontcolor=0x{{font_color}}:borderw=2:bordercolor=0x{{border_color}}:x={{x}}:y={{y}}:enable='between(t,0,{{duration}})'"
-       {:text (escape-drawtext s)
-        :font_size fs
-        :font_color fc
-        :border_color bc
-        :x x
-        :y y
-        :duration duration-sec}))))
+          bc (or (:border_color t0) "000000")
+          windows (text-windows t0 duration-sec)]
+      (str/join ""
+                (map (fn [{:keys [text start-sec end-sec]}]
+                       (selmer/render
+                        ",drawtext=text='{{text}}':fontsize={{font_size}}:fontcolor=0x{{font_color}}:borderw=2:bordercolor=0x{{border_color}}:x={{x}}:y={{y}}:enable='between(t,{{start}},{{end}})'"
+                        {:text (escape-drawtext text)
+                         :font_size fs
+                         :font_color fc
+                         :border_color bc
+                         :x x
+                         :y y
+                         :start start-sec
+                         :end end-sec}))
+                     windows)))))
 
 (defn- clip-filter
   [idx w h fps dur-sec _kind effects & {:keys [alpha? tag-prefix]

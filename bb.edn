@@ -8,4 +8,6 @@
   sche {:doc "sche scenario.jsonc [-o out.mp4] | sche --generate scenario.jsonc"
         :task (apply babashka.tasks/shell
                      (into ["bb" "-m" "scheherazade.main"]
-                           *command-line-args*))}}}
+                           *command-line-args*))}
+  generate-schema {:doc "Generate scenario-schema.json from the Malli scenario-schema"
+                   :task (babashka.tasks/shell "bb" "generate_schema.clj")}}}

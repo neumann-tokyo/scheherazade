@@ -1,0 +1,214 @@
+{
+  "type" : "object",
+  "properties" : {
+    "title" : {
+      "type" : "string",
+      "maxLength" : 100
+    },
+    "description" : {
+      "type" : "string",
+      "maxLength" : 2000
+    },
+    "screen" : {
+      "type" : "string",
+      "pattern" : "^\\d+x\\d+$"
+    },
+    "fps" : {
+      "anyOf" : [ {
+        "type" : "string"
+      }, {
+        "type" : "integer"
+      } ]
+    },
+    "video_codec" : {
+      "type" : "string"
+    },
+    "audio_codec" : {
+      "type" : "string"
+    },
+    "timeline" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/definitions/scheherazade.scenario.schema~1timeline"
+      }
+    }
+  },
+  "required" : [ "title", "description", "timeline" ],
+  "definitions" : {
+    "scheherazade.scenario.schema/timeline" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "pattern" : "^\\d{6}$"
+        },
+        "videos" : {
+          "type" : "array",
+          "items" : {
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "path" : {
+                  "type" : "string"
+                },
+                "length" : {
+                  "type" : "integer"
+                },
+                "effects" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "name" : {
+                        "type" : "string"
+                      },
+                      "props" : {
+                        "type" : "object",
+                        "properties" : { }
+                      }
+                    },
+                    "required" : [ "name" ]
+                  }
+                }
+              },
+              "required" : [ "path" ]
+            } ]
+          }
+        },
+        "audios" : {
+          "type" : "array",
+          "items" : {
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "object",
+              "properties" : {
+                "path" : {
+                  "type" : "string"
+                },
+                "effects" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "name" : {
+                        "type" : "string"
+                      },
+                      "props" : {
+                        "type" : "object",
+                        "properties" : { }
+                      }
+                    },
+                    "required" : [ "name" ]
+                  }
+                },
+                "generation" : {
+                  "type" : "object",
+                  "properties" : {
+                    "name" : {
+                      "type" : "string",
+                      "enum" : [ "voicevox", "gemini", "elevenlabs" ]
+                    },
+                    "props" : {
+                      "type" : "object",
+                      "properties" : { }
+                    }
+                  },
+                  "required" : [ "name", "props" ]
+                }
+              },
+              "required" : [ "path" ]
+            } ]
+          }
+        },
+        "texts" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "text" : {
+                "anyOf" : [ {
+                  "type" : "string"
+                }, {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                } ]
+              },
+              "position" : {
+                "type" : "object",
+                "properties" : {
+                  "x" : {
+                    "anyOf" : [ {
+                      "type" : "integer"
+                    }, {
+                      "type" : "number"
+                    } ]
+                  },
+                  "y" : {
+                    "anyOf" : [ {
+                      "type" : "integer"
+                    }, {
+                      "type" : "number"
+                    } ]
+                  },
+                  "w" : {
+                    "anyOf" : [ {
+                      "type" : "integer"
+                    }, {
+                      "type" : "number"
+                    } ]
+                  },
+                  "h" : {
+                    "anyOf" : [ {
+                      "type" : "integer"
+                    }, {
+                      "type" : "number"
+                    } ]
+                  }
+                },
+                "required" : [ "x", "y", "w", "h" ]
+              },
+              "font_size" : {
+                "type" : "string"
+              },
+              "font_family" : {
+                "type" : "string"
+              },
+              "font_color" : {
+                "type" : "string",
+                "pattern" : "^[0-9a-fA-F]{6}$"
+              },
+              "border_color" : {
+                "type" : "string",
+                "pattern" : "^[0-9a-fA-F]{6}$"
+              },
+              "chank" : {
+                "type" : "string",
+                "enum" : [ "char", "string", "text" ]
+              },
+              "speed" : {
+                "anyOf" : [ {
+                  "type" : "integer"
+                }, {
+                  "type" : "number"
+                } ]
+              }
+            },
+            "required" : [ "text", "position" ]
+          }
+        },
+        "children" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/scheherazade.scenario.schema~1timeline"
+          }
+        }
+      },
+      "required" : [ "id" ]
+    }
+  }
+}

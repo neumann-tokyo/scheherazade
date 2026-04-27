@@ -23,7 +23,7 @@
             "w": 900,
             "h": 300
           },
-          "font_size": "28pt",
+          "font_size": 120,
           "font_family": "GenEi Kiwami Gothic",
           "font_color": "fff12d",
           "border_color": "000000",
@@ -70,7 +70,7 @@
                 "w": 864,
                 "h": 282
               },
-              "font_size": "15pt",
+              "font_size": 50,
               "font_family": "GenEi M Gothic v2 Bold",
               "font_color": "ffffff",
               "border_color": "000000",
@@ -117,7 +117,7 @@
                 "w": 864,
                 "h": 282
               },
-              "font_size": "15pt",
+              "font_size": 50,
               "font_family": "GenEi M Gothic v2 Bold",
               "font_color": "ffffff",
               "border_color": "000000",

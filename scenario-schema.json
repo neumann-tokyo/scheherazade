@@ -173,7 +173,8 @@
                 "required" : [ "x", "y", "w", "h" ]
               },
               "font_size" : {
-                "type" : "string"
+                "type" : "integer",
+                "exclusiveMinimum" : 0
               },
               "font_family" : {
                 "type" : "string"

@@ -43,7 +43,7 @@
   [:map
    [:text [:or :string [:vector :string]]]
    [:position position-schema]
-   [:font_size {:optional true} :string]
+   [:font_size {:optional true} [:and :int [:> 0]]]
    [:font_family {:optional true} :string]
    [:font_color {:optional true} hex-6]
    [:border_color {:optional true} hex-6]

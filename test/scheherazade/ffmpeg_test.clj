@@ -1,5 +1,6 @@
 (ns scheherazade.ffmpeg-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing]]
             [scheherazade.ffmpeg :as ff]))
 
 (def base-pos {:x 100 :y 200 :w 400 :h 100})
@@ -79,3 +80,37 @@
           ws (ff/text-windows obj 4.0)]
       (is (= 1 (count ws)))
       (is (= "hello" (:text (first ws)))))))
+
+(deftest drawtext-respects-font-family
+  (let [drawtext-suffix (deref (resolve 'scheherazade.ffmpeg/drawtext-suffix))
+        txt {:text "hello"
+             :position base-pos
+             :font_family "GenEi Kiwami Gothic"}
+        s (drawtext-suffix [txt] 5.0)]
+    (is (string? s))
+    (is (.contains s ":font='GenEi Kiwami Gothic'"))))
+
+(deftest fit-text-to-box-wraps-and-truncates
+  (let [fit-text-to-box (deref (resolve 'scheherazade.ffmpeg/fit-text-to-box))
+        text-width-px (deref (resolve 'scheherazade.ffmpeg/text-width-px))
+        wrapped (fit-text-to-box "abcdefghijkl" 10 40 30 nil)
+        truncated (fit-text-to-box "abcdefghijklmnopqr" 10 40 11 nil)
+        wrapped-lines (str/split wrapped #"\n")
+        trunc-lines (str/split truncated #"\n")]
+    (is (> (count wrapped-lines) 1))
+    (is (every? #(<= (text-width-px % nil 10) 40.0) wrapped-lines))
+    (is (= 1 (count trunc-lines)))
+    (is (.endsWith (first trunc-lines) "..."))
+    (is (<= (text-width-px (first trunc-lines) nil 10) 40.0))))
+
+(deftest drawtext-renders-wrapped-lines-as-multiple-filters
+  (let [drawtext-suffix (deref (resolve 'scheherazade.ffmpeg/drawtext-suffix))
+        txt {:text "abcdefghijkl"
+             :position {:x 10 :y 20 :w 40 :h 30}
+             :font_size 10}
+        s (drawtext-suffix [txt] 5.0)
+        ys (set (map second (re-seq #":y=(\d+):" s)))]
+    (is (string? s))
+    (is (= 2 (dec (count (str/split s #",drawtext=")))))
+    (is (.contains s ":y=20:"))
+    (is (contains? ys "30"))))

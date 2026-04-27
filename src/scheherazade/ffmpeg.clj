@@ -91,6 +91,90 @@
   [raw]
   (if (string? raw) raw (str/join "" raw)))
 
+(defn- char-units
+  [ch]
+  (let [code (int ch)]
+    (if (or (<= 0x1100 code 0x11FF)   ;; Hangul Jamo
+            (<= 0x2E80 code 0xA4CF)   ;; CJK + radicals + kana + bopomofo
+            (<= 0xAC00 code 0xD7A3)   ;; Hangul syllables
+            (<= 0xF900 code 0xFAFF)   ;; CJK compatibility ideographs
+            (<= 0xFE10 code 0xFE6F)   ;; vertical/fullwidth punctuation
+            (<= 0xFF01 code 0xFF60)   ;; fullwidth ASCII variants
+            (<= 0xFFE0 code 0xFFE6))  ;; fullwidth symbols
+      2
+      1)))
+
+(defn- wrap-line-by-units
+  [line max-units]
+  (if (<= max-units 0)
+    [""]
+    (loop [chars (seq line) cur [] cur-units 0 out []]
+      (if-let [ch (first chars)]
+        (let [u (char-units ch)]
+          (if (> (+ cur-units u) max-units)
+            (recur chars [] 0 (conj out (apply str cur)))
+            (recur (next chars) (conj cur ch) (+ cur-units u) out)))
+        (if (seq cur)
+          (conj out (apply str cur))
+          (if (seq out) out [""]))))))
+
+(defn- text-width-px
+  [text font-family font-size]
+  (let [size (max 1 (long (or font-size 24)))
+        units (reduce + 0 (map char-units (str (or text ""))))]
+    ;; Python implementation wraps by measured pixel width each appended char.
+    ;; Here we use a calibrated approximation per character unit.
+    (* units size 0.5)))
+
+(defn- line-height-px
+  [font-family font-size]
+  (let [size (max 1 (long (or font-size 24)))]
+    ;; Keep close to practical glyph height like PIL's textbbox("あ").
+    (* size 1.0)))
+
+(defn- wrap-line-by-width
+  [line box-w font-family font-size]
+  (if (<= box-w 0)
+    [""]
+    (loop [chars (seq line) cur "" out []]
+      (if-let [ch (first chars)]
+        (let [candidate (str cur ch)]
+          (if (<= (text-width-px candidate font-family font-size) box-w)
+            (recur (next chars) candidate out)
+            (if (str/blank? cur)
+              (recur (next chars) (str ch) out)
+              (recur chars "" (conj out cur)))))
+        (if (str/blank? cur)
+          (if (seq out) out [""])
+          (conj out cur))))))
+
+(defn- fit-text-to-box
+  [text font-size box-w box-h font-family]
+  (let [safe-fs (max 1 (long (or font-size 24)))
+        w (max 0 (long (or box-w 0)))
+        h (max 0 (long (or box-h 0)))
+        line-height (max 1 (long (Math/ceil (line-height-px font-family safe-fs))))
+        max-lines (max 1 (long (Math/floor (/ h line-height))))
+        lines (->> (str/split (str (or text "")) #"\r?\n")
+                   (mapcat #(wrap-line-by-width % w font-family safe-fs))
+                   vec)]
+    (if (<= (count lines) max-lines)
+      (str/join "\n" lines)
+      (let [taken (vec (take max-lines lines))
+            last-idx (dec (count taken))
+            kept-prefix (subvec taken 0 last-idx)
+            last-line (or (nth taken last-idx "") "")
+            ellipsis "..."
+            trimmed-last (loop [s last-line]
+                           (let [candidate (str s ellipsis)]
+                             (if (<= (text-width-px candidate font-family safe-fs) w)
+                               s
+                               (if (empty? s)
+                                 ""
+                                 (recur (subs s 0 (dec (count s))))))))
+            final-last (str trimmed-last ellipsis)]
+        (str/join "\n" (conj kept-prefix final-last))))))
+
 (defn text-windows
   "Return a seq of {:text :start-sec :end-sec} display windows for a text object.
 
@@ -137,23 +221,35 @@
     (let [pos (:position t0)
           x (long (:x pos))
           y (long (:y pos))
-          fs (str/replace (or (:font_size t0) "24") #"pt$" "")
+          w (long (:w pos))
+          h (long (:h pos))
+          fs (long (or (:font_size t0) 24))
+          ff (some-> (:font_family t0) str str/trim)
           fc (or (:font_color t0) "ffffff")
           bc (or (:border_color t0) "000000")
-          windows (text-windows t0 duration-sec)]
+          windows (text-windows t0 duration-sec)
+          line-height (max 1 (long (Math/ceil (line-height-px ff fs))))
+          font-part (if (str/blank? ff)
+                      ""
+                      (str ":font='" (escape-drawtext ff) "'"))]
       (str/join ""
-                (map (fn [{:keys [text start-sec end-sec]}]
-                       (selmer/render
-                        ",drawtext=text='{{text}}':fontsize={{font_size}}:fontcolor=0x{{font_color}}:borderw=2:bordercolor=0x{{border_color}}:x={{x}}:y={{y}}:enable='between(t,{{start}},{{end}})'"
-                        {:text (escape-drawtext text)
-                         :font_size fs
-                         :font_color fc
-                         :border_color bc
-                         :x x
-                         :y y
-                         :start start-sec
-                         :end end-sec}))
-                     windows)))))
+                (mapcat (fn [{:keys [text start-sec end-sec]}]
+                          (let [lines (str/split (fit-text-to-box text fs w h ff) #"\n" -1)]
+                            (map-indexed
+                             (fn [i line]
+                               (selmer/render
+                                ",drawtext=text='{{text}}'{{font_part|safe}}:fontsize={{font_size}}:fontcolor=0x{{font_color}}:borderw=2:bordercolor=0x{{border_color}}:x={{x}}:y={{y}}:enable='between(t,{{start}},{{end}})'"
+                                {:text (escape-drawtext line)
+                                 :font_part font-part
+                                 :font_size fs
+                                 :font_color fc
+                                 :border_color bc
+                                 :x x
+                                 :y (+ y (* i line-height))
+                                 :start start-sec
+                                 :end end-sec}))
+                             lines)))
+                        windows)))))
 
 (defn- clip-filter
   [idx w h fps dur-sec _kind effects & {:keys [alpha? tag-prefix]

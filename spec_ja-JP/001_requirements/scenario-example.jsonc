@@ -37,7 +37,7 @@
             "w": 300,
             "h": 300
           },
-          "font_size": "15pt",
+          "font_size": 15,
           "font_family": "sane-serif",
           "font_color": "ffffff",
           "border_color": "ffff00",

@@ -86,12 +86,29 @@
     (reduce + 0 (map #(timeline-node-ms % ctx) children))
     0))
 
+(declare timeline-node-audio-end-ms)
+
+(defn- children-audio-end-ms
+  [children ctx]
+  (if (seq children)
+    (reduce + 0 (map #(timeline-node-audio-end-ms % ctx) children))
+    0))
+
+(defn- timeline-node-audio-end-ms
+  [{:keys [audios children]} ctx]
+  (let [own-audio (if (seq audios) (sum-audio-ms audios ctx) 0)
+        nested-audio (children-audio-end-ms children ctx)]
+    (long (max own-audio nested-audio))))
+
 (defn timeline-node-ms
   "Resolved duration for a single Timeline Object (ms)."
   [{:keys [children] :as node} ctx]
   (let [base (base-duration-ms-no-children node ctx)
-        cend (children-end-ms children ctx)]
-    (long (max base cend))))
+        cend (children-end-ms children ctx)
+        child-audio-end (children-audio-end-ms children ctx)]
+    (if (and (seq children) (pos? child-audio-end))
+      (long child-audio-end)
+      (long (max base cend)))))
 
 (defn- build-video-clips
   [{:keys [videos]} duration-ms ctx]

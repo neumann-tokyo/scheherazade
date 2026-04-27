@@ -1,0 +1,132 @@
+{
+  "title": "すごいAI特集",
+  "description": "Techラジオ#3 すごいAIを紹介します",
+  "screen": "1920x1080",
+  "fps": 30,
+  "video_codec": "vp9",
+  "audio_codec": "opus",
+  "timeline": [
+    {
+      "id": "000001",
+      "videos": [
+        "examples/background.png"
+      ],
+      "audios": [
+        "examples/New_Breath.mp3"
+      ],
+      "texts": [
+        {
+          "text": "動画作成のテスト",
+          "position": {
+            "x": 500,
+            "y": 120,
+            "w": 900,
+            "h": 300
+          },
+          "font_size": "28pt",
+          "font_family": "GenEi Kiwami Gothic",
+          "font_color": "fff12d",
+          "border_color": "000000",
+          "chank": "text",
+          "speed": 500
+        }
+      ],
+      "children": [
+        {
+          "id": "000002",
+          "videos": [
+            {
+              "path": "examples/alice-talk2.png",
+              "effects": [
+                {
+                  "name": "chroma",
+                  "props": {
+                    "target_color": "#00ff00",
+                    "threshold": "0.35"
+                  }
+                }
+              ]
+            }
+          ],
+          "audios": [
+            {
+              "path": "examples/talks/000002.wav",
+              "generation": {
+                "name": "voicevox",
+                "props": {
+                  "text": "こんにちは、アリスです。今日も元気にお届けしていきますよ！",
+                  "speaker_id": "10",
+                  "speed": 1.2
+                }
+              }
+            }
+          ],
+          "texts": [
+            {
+              "text": "こんにちは、アリスです。今日も元気にお届けしていきますよ！",
+              "position": {
+                "x": 526,
+                "y": 733,
+                "w": 864,
+                "h": 282
+              },
+              "font_size": "15pt",
+              "font_family": "GenEi M Gothic v2 Bold",
+              "font_color": "ffffff",
+              "border_color": "000000",
+              "chank": "text",
+              "speed": 500
+            }
+          ]
+        },
+        {
+          "id": "000003",
+          "videos": [
+            {
+              "path": "examples/bob-talk2.png",
+              "effects": [
+                {
+                  "name": "chroma",
+                  "props": {
+                    "target_color": "#00ff00",
+                    "threshold": "0.35"
+                  }
+                }
+              ]
+            }
+          ],
+          "audios": [
+            {
+              "path": "examples/talks/000003.wav",
+              "generation": {
+                "name": "voicevox",
+                "props": {
+                  "text": "こんにちは、ボブです。ReactやNext.jsが好きです",
+                  "speaker_id": "108",
+                  "speed": 1.2
+                }
+              }
+            }
+          ],
+          "texts": [
+            {
+              "text": "こんにちは、ボブです。ReactやNext.jsが好きです",
+              "position": {
+                "x": 526,
+                "y": 733,
+                "w": 864,
+                "h": 282
+              },
+              "font_size": "15pt",
+              "font_family": "GenEi M Gothic v2 Bold",
+              "font_color": "ffffff",
+              "border_color": "000000",
+              "chank": "text",
+              "speed": 500
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

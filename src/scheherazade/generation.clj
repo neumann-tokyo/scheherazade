@@ -3,6 +3,7 @@
   (:require [babashka.fs :as fs]
             [babashka.http-client :as http]
             [cheshire.core :as json]
+            [clojure.java.io :as io]
             [clojure.string :as str]))
 
 (defn- slurp-json-file
@@ -50,6 +51,11 @@
     (assoc props :text (apply-dictionary (:text props) dictionary))
     props))
 
+(defn- missing-or-empty-file?
+  [path]
+  (or (not (fs/exists? path))
+      (zero? (fs/size path))))
+
 (defn- join-url
   [base path]
   (str (str/replace (str base) #"/+$" "")
@@ -58,9 +64,25 @@
 
 (defn- write-audio!
   [out-path body]
+  (let [body-bytes (cond
+                     (bytes? body)
+                     body
+
+                     (instance? java.io.InputStream body)
+                     (with-open [in ^java.io.InputStream body
+                                 buf (java.io.ByteArrayOutputStream.)]
+                       (io/copy in buf)
+                       (.toByteArray buf))
+
+                     (string? body)
+                     (.getBytes ^String body java.nio.charset.StandardCharsets/ISO_8859_1)
+
+                     :else
+                     (throw (ex-info "Unsupported audio response body type"
+                                     {:type (some-> body class str)})))]
   (ensure-parent-dir! out-path)
   (with-open [out (java.io.FileOutputStream. (str out-path))]
-    (.write out ^bytes body)))
+    (.write out ^bytes body-bytes))))
 
 (defn- post-json
   [url body {:keys [headers] :as opts}]
@@ -69,8 +91,7 @@
                         :body (json/generate-string body))))
 
 (defmulti generation
-  (fn [params _out-path _opts]
-    (normalize-strategy (:name params))))
+  (fn [params _out-path _opts] (:name params)))
 
 (defmethod generation :voicevox
   [{:keys [props]} out-path _opts]
@@ -93,6 +114,7 @@
                      query-json)
         synth-resp (post-json synth-url query-json
                               {:headers {"accept" "audio/wav"}
+                               :as :stream
                                :query-params {"speaker" speaker-id}})]
     (when-not (= 200 (:status synth-resp))
       (throw (ex-info "VOICEVOX synthesis failed"
@@ -115,7 +137,8 @@
               :voice_settings {:speed speed}}
         resp (post-json url body
                         {:headers {"xi-api-key" api-key
-                                   "accept" "audio/mpeg"}})]
+                                   "accept" "audio/mpeg"}
+                         :as :stream})]
     (when-not (= 200 (:status resp))
       (throw (ex-info "ElevenLabs synthesis failed"
                       {:status (:status resp) :body (:body resp)})))
@@ -177,7 +200,7 @@
                  (let [n (audio-node a)
                        p (:path n)
                        g (:generation n)]
-                   (when (and g (not (fs/exists? p)))
+                   (when (and g p (missing-or-empty-file? p))
                      (generate-audio-file! g p run-opts)))))
              (walk-timeline [t]
                (walk-audios (or (:audios t) []))

@@ -1,0 +1,154 @@
+[
+  {
+    "word": "脆弱性",
+    "ruby": "ゼジャクセイ"
+  },
+  {
+    "word": "関数型",
+    "ruby": "カンスウガタ"
+  },
+  {
+    "word": "clojure",
+    "ruby": "クロージャー"
+  },
+  {
+    "word": "Clojure",
+    "ruby": "クロージャー"
+  },
+  {
+    "word": "Gentoo",
+    "ruby": "ゼントゥー"
+  },
+  {
+    "word": "gentoo",
+    "ruby": "ゼントゥー"
+  },
+  {
+    "word": "Tech",
+    "ruby": "テック"
+  },
+  {
+    "word": "Next.js",
+    "ruby": "ネクストジェイエス"
+  },
+  {
+    "word": "Stitch",
+    "ruby": "スティッチ"
+  },
+  {
+    "word": "Markdown",
+    "ruby": "マークダウン"
+  },
+  {
+    "word": "Hacker News",
+    "ruby": "ハッカーニュース"
+  },
+  {
+    "word": "README.md",
+    "ruby": "リードミーエムディー"
+  },
+  {
+    "word": "WCAG",
+    "ruby": "ダブリューシーエージー"
+  },
+  {
+    "word": "DESIGN.md",
+    "ruby": "デザインエムディー"
+  },
+  {
+    "word": "OSS",
+    "ruby": "オーエスエス"
+  },
+  {
+    "word": "Google+",
+    "ruby": "グーグルプラス"
+  },
+  {
+    "word": "Claude",
+    "ruby": "クロード"
+  },
+  {
+    "word": "Codex",
+    "ruby": "コードエックス"
+  },
+  {
+    "word": "Anthropic",
+    "ruby": "アンソロピック"
+  },
+  {
+    "word": "lint",
+    "ruby": "リント"
+  },
+  {
+    "word": "Storybook",
+    "ruby": "ストーリーブック"
+  },
+  {
+    "word": "OpenAPI",
+    "ruby": "オープンエーピーアイ"
+  },
+  {
+    "word": "CSS",
+    "ruby": "シーエスエス"
+  },
+  {
+    "word": "Cursor",
+    "ruby": "カーソル"
+  },
+  {
+    "word": "GitHub",
+    "ruby": "ギットハブ"
+  },
+  {
+    "word": "Copilot",
+    "ruby": "コパイロット"
+  },
+  {
+    "word": "malli",
+    "ruby": "マリー"
+  },
+  {
+    "word": "JVM",
+    "ruby": "ジェーブイエム"
+  },
+  {
+    "word": "Lisp",
+    "ruby": "リスプ"
+  },
+  {
+    "word": "動的型付け",
+    "ruby": "ドウテキカタヅケ"
+  },
+  {
+    "word": "型情報",
+    "ruby": "カタジョウホウ"
+  },
+  {
+    "word": "JSON",
+    "ruby": "ジェイソン"
+  },
+  {
+    "word": "Schema",
+    "ruby": "スキーマ"
+  },
+  {
+    "word": "DRY",
+    "ruby": "ドライ"
+  },
+  {
+    "word": "clj-kondo",
+    "ruby": "シーエルジェーコンドウ"
+  },
+  {
+    "word": "VSCode",
+    "ruby": "ヴイエスコード"
+  },
+  {
+    "word": "TypeScript",
+    "ruby": "タイプスクリプト"
+  },
+  {
+    "word": "nilable",
+    "ruby": "ニラブル"
+  }
+]

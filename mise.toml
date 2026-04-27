@@ -1,0 +1,11 @@
+[tools]
+babashka = { version = "latest", exe = "bb" }
+
+[env]
+SCHE_VOICEVOX_URL="http://localhost:50021"
+
+[tasks.example-generate]
+run = "bb run sche -- --generate examples/scenario.jsonc -d examples/dictionary.json"
+
+[tasks.example-run]
+run = "bb run sche -- examples/scenario.jsonc -d examples/dictionary.json -o examples/youtube.webm"

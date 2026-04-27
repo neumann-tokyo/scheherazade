@@ -3,3 +3,8 @@
 .cursor
 .github
 .agents
+# CocoIndex Code (ccc)
+/.cocoindex_code/
+
+examples/talks
+examples/youtube.webm

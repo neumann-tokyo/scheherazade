@@ -36,19 +36,47 @@
   [codec]
   (case (str/lower-case (str (or codec "aac")))
     "aac" ["-c:a" "aac" "-b:a" "192k"]
-    (throw (ex-info "Unsupported audio_codec (use aac)" {:codec codec}))))
+    "opus" ["-c:a" "libopus" "-b:a" "192k"]
+    (throw (ex-info "Unsupported audio_codec (use aac or opus)" {:codec codec}))))
+
+(defn- effective-audio-codec
+  [codec out-path]
+  (let [ext (-> (or (fs/extension (str out-path)) "")
+                str/lower-case
+                (str/replace #"^\." ""))]
+    (cond
+      ;; WebM does not support AAC.
+      (and (= ext "webm")
+           (contains? #{nil "" "aac"} (some-> codec str/lower-case)))
+      "opus"
+
+      :else codec)))
 
 (defn- chroma-suffix
   [effects]
-  (when-let [ck (some (fn [e]
-                        (when (and (:name e)
-                                   (str/includes? (str/lower-case (:name e)) "chroma"))
-                          e))
-                      effects)]
-    (let [props (:props ck)
-          col (str/replace (str (or (:target_color props) "#00ff00")) "#" "0x")
-          thr (str (or (:threshold props) "0.35"))]
-      (str ",format=yuva420p,colorkey=" col ":" thr ":0.1"))))
+  (letfn [(pick [m k]
+            (when (map? m)
+              (or (get m k)
+                  (get m (name k)))))
+          (name-text [e]
+            (some-> (pick e :name) str str/lower-case))]
+    (when-let [ck (some (fn [e]
+                          (when (and (name-text e)
+                                     (str/includes? (name-text e) "chroma"))
+                            e))
+                        effects)]
+      (let [props (or (pick ck :props) {})
+            col (str/replace (str (or (pick props :target_color) "#00ff00")) "#" "0x")
+            thr (str (or (pick props :threshold) "0.35"))]
+        (str ",format=yuva420p,colorkey=" col ":" thr ":0.1")))))
+
+(defn- chroma-overlay-suffix
+  [children-resolved]
+  (let [effects (->> children-resolved
+                     (mapcat :video-clips)
+                     (mapcat :effects)
+                     vec)]
+    (or (chroma-suffix effects) "")))
 
 (defn- escape-drawtext
   [s]
@@ -215,7 +243,7 @@
               [(str "[" anull-idx ":a]asetpts=PTS-STARTPTS[aud]")])
         vsrc (subs vtag 1 (dec (count vtag)))
         pix-fmt (if alpha? "yuva420p" "yuv420p")
-        vout (selmer/render "[{{vsrc}}]format={{pix_fmt}}{{drawtext}}[vout]"
+        vout (selmer/render "[{{vsrc}}]format={{pix_fmt}}{{drawtext|safe}}[vout]"
                             {:vsrc vsrc
                              :pix_fmt pix-fmt
                              :drawtext (or (drawtext-suffix texts dur-sec) "")})
@@ -227,7 +255,7 @@
                          ["-filter_complex" fc "-map" "[vout]" "-map" "[aud]"
                           "-t" (str dur-sec)]
                          enc
-                         (audio-encoder-args (:audio_codec scenario))
+                         (audio-encoder-args (effective-audio-codec (:audio_codec scenario) out-path))
                          [out-path]))]
     (p/check (apply p/process {:inherit true} cmd))))
 
@@ -264,18 +292,21 @@
           [w h] (parse-screen (:screen scenario))
           fps (parse-fps scenario)
           dur-sec (/ duration-ms 1000.0)
+          child-chroma (chroma-overlay-suffix children-resolved)
           cmd (vec (concat
                     ["ffmpeg" "-y"
                      "-i" parent-path
                      "-i" children-combined-path
                      "-filter_complex"
-                     (str "[1:v]format=yuva420p[child_v];"
+                     (str "[1:v]format=yuva420p"
+                          child-chroma
+                          "[child_v];"
                           "[0:v][child_v]overlay=0:0:format=auto[vout];"
                           "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0[aout]")
                      "-map" "[vout]" "-map" "[aout]"
                      "-t" (str dur-sec)]
                     (video-encoder-args (:video_codec scenario))
-                    (audio-encoder-args (:audio_codec scenario))
+                    (audio-encoder-args (effective-audio-codec (:audio_codec scenario) out-path))
                     [out-path]))]
       (p/check (apply p/process {:inherit true} cmd)))))
 

@@ -7,16 +7,35 @@
 
 (defn parse-screen
   [s]
-  (let [s (or s "1920x1080")
-        [w h] (str/split s #"x")]
-    [(parse-long w) (parse-long h)]))
+  (let [screen (or s "1920x1080")
+        [w h :as parts] (str/split screen #"x")]
+    (when-not (= 2 (count parts))
+      (throw (ex-info "Invalid screen format (expected <width>x<height>)"
+                      {:screen s})))
+    (let [pw (parse-long w)
+          ph (parse-long h)]
+      (when (or (nil? pw) (nil? ph) (<= pw 0) (<= ph 0))
+        (throw (ex-info "Invalid screen size (width/height must be positive integers)"
+                        {:screen s})))
+      [pw ph])))
 
 (defn parse-fps
   [scenario]
-  (long (cond
-          (number? (:fps scenario)) (:fps scenario)
-          (string? (:fps scenario)) (parse-long (:fps scenario))
-          :else 30)))
+  (let [raw (:fps scenario)]
+    (cond
+      (nil? raw) 30
+      (number? raw)
+      (let [fps (long raw)]
+        (when (<= fps 0)
+          (throw (ex-info "Invalid fps (must be positive)" {:fps raw})))
+        fps)
+      (string? raw)
+      (let [fps (parse-long raw)]
+        (when (or (nil? fps) (<= fps 0))
+          (throw (ex-info "Invalid fps (must be positive integer string)" {:fps raw})))
+        fps)
+      :else
+      (throw (ex-info "Invalid fps type" {:fps raw :type (type raw)})))))
 
 (defn ffprobe-duration-sec
   [path]

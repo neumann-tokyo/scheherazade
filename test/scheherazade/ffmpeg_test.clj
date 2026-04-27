@@ -114,3 +114,32 @@
     (is (= 2 (dec (count (str/split s #",drawtext=")))))
     (is (.contains s ":y=20:"))
     (is (contains? ys "30"))))
+
+(deftest parse-screen-and-fps-validate-inputs
+  (testing "parse-screen accepts default and valid values"
+    (is (= [1920 1080] (ff/parse-screen nil)))
+    (is (= [1280 720] (ff/parse-screen "1280x720"))))
+  (testing "parse-screen rejects malformed values"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid screen format"
+                          (ff/parse-screen "1920")))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid screen size"
+                          (ff/parse-screen "1920xabc")))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid screen size"
+                          (ff/parse-screen "0x1080"))))
+  (testing "parse-fps accepts defaults and valid values"
+    (is (= 30 (ff/parse-fps {})))
+    (is (= 60 (ff/parse-fps {:fps 60})))
+    (is (= 24 (ff/parse-fps {:fps "24"}))))
+  (testing "parse-fps rejects invalid values"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid fps"
+                          (ff/parse-fps {:fps "abc"})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid fps"
+                          (ff/parse-fps {:fps 0})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Invalid fps type"
+                          (ff/parse-fps {:fps true})))))

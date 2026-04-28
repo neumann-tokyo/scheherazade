@@ -32,7 +32,7 @@ sche --generate path/to/scenario.jsonc
 辞書ファイル（読みの置換。省略時はシナリオと同じディレクトリの `dictionary.json`）を明示する場合:
 
 ```bash
-sche path/to/scenario.jsonc -o youtube.mp4 -d path/to/dictionary.json
+sche path/to/scenario.jsonc -o youtube.webm -d path/to/dictionary.json
 ```
 
 `generation.name` ごとの環境変数:

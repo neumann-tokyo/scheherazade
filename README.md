@@ -20,7 +20,7 @@ bbin install https://github.com/neumann-tokyo/scheherazade.git
 ## コマンド
 
 ```bash
-sche path/to/scenario.jsonc -o youtube.mp4
+sche path/to/scenario.jsonc -o youtube.webm
 ```
 
 音声だけ先に生成する（`generation` があり、かつ `path` が未作成の Audio Object 向け）:

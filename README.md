@@ -14,25 +14,25 @@
 Please use [bbin](https://github.com/babashka/bbin)
 
 ```
-bbin install git@github.com:neumann-tokyo/scheherazade.git
+bbin install https://github.com/neumann-tokyo/scheherazade.git
 ```
 
 ## コマンド
 
 ```bash
-bb run sche -- path/to/scenario.jsonc -o youtube.mp4
+sche path/to/scenario.jsonc -o youtube.mp4
 ```
 
 音声だけ先に生成する（`generation` があり、かつ `path` が未作成の Audio Object 向け）:
 
 ```bash
-bb run sche -- --generate path/to/scenario.jsonc
+sche --generate path/to/scenario.jsonc
 ```
 
 辞書ファイル（読みの置換。省略時はシナリオと同じディレクトリの `dictionary.json`）を明示する場合:
 
 ```bash
-bb run sche -- path/to/scenario.jsonc -o youtube.mp4 -d path/to/dictionary.json
+sche path/to/scenario.jsonc -o youtube.mp4 -d path/to/dictionary.json
 ```
 
 `generation.name` ごとの環境変数:

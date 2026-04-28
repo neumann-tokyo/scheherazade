@@ -11,7 +11,11 @@
 
 ## インストール（開発時）
 
-リポジトリをクローンしたディレクトリで依存解決は `bb` が自動で行います。
+Please use [bbin](https://github.com/babashka/bbin)
+
+```
+bbin install git@github.com:neumann-tokyo/scheherazade.git
+```
 
 ## コマンド
 
